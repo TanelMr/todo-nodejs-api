@@ -21,7 +21,7 @@ sequelize
     console.error("Unable to connect to the database: ", error);
   });
 
-const todos = sequelize.define("sequelizeTodos", {
+const TaskModel = sequelize.define("sequelizeTasks", {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -33,12 +33,12 @@ const todos = sequelize.define("sequelizeTodos", {
   completed: {
     type: DataTypes.STRING,
   },
-  userID: {
+  userId: {
     type: DataTypes.INTEGER,
   },
 });
 
-const users = sequelize.define(
+const UserModel = sequelize.define(
   "sequelizeUsers",
   {
     id: {
@@ -56,6 +56,50 @@ const users = sequelize.define(
   { timestamps: false }
 );
 
+// Create sessions schema
+const SessionModel = sequelize.define(
+  "sequelizeSessions",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    token: {
+      type: DataTypes.STRING,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+    },
+  },
+  { timestamps: false }
+);
+
+// Create logs schema
+const LogModel = sequelize.define(
+  "sequelizeLogs",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    date: {
+      type: DataTypes.STRING,
+    },
+    method: {
+      type: DataTypes.STRING,
+    },
+    userID: {
+      type: DataTypes.INTEGER,
+    },
+    changes: {
+      type: DataTypes.STRING,
+    },
+  },
+  { timestamps: false }
+);
+
 sequelize
   .sync()
   .then(() => {
@@ -65,22 +109,19 @@ sequelize
     console.log("Failed to sync db: " + err.message);
   });
 
-// logging
-const logs = [];
-
 function formatDate(date) {
   let newDate = date.replaceAll(/T/g, ", ").replaceAll(/"/g, "");
   return newDate.slice(0, 17);
 }
 
-const saveLogs = ({ data, method, firstValue, secondValue }) => {
+const saveLogs = ({ data, method, changes }) => {
   let date = formatDate(JSON.stringify(data.get("updatedAt")));
   const subLog = [];
-  subLog.push(date, method, data.get("userID"), firstValue, secondValue);
-  logs.push(subLog);
+  subLog.push(date, method, data.get("userID"), changes);
+  LogModel.push(subLog);
 };
 
-todos.beforeCreate((instance, options) => {
+TaskModel.beforeCreate((instance, options) => {
   if (instance.get("title") === "" && instance.get("completed") === "") {
     return null;
   } else {
@@ -93,7 +134,7 @@ todos.beforeCreate((instance, options) => {
   }
 });
 
-todos.beforeUpdate((instance, options) => {
+TaskModel.beforeUpdate((instance, options) => {
   if (
     instance.previous("title") === instance.get("title") &&
     instance.previous("completed") === instance.get("completed")
@@ -117,7 +158,7 @@ todos.beforeUpdate((instance, options) => {
   }
 });
 
-todos.beforeDestroy((instance, options) => {
+TaskModel.beforeDestroy((instance, options) => {
   saveLogs({
     data: instance,
     method: "DELETE",
@@ -126,198 +167,8 @@ todos.beforeDestroy((instance, options) => {
   });
 });
 
-const sendLogs = (req, res) => {
-  if (logs === null) res.status(500).send({ error: "Internal server error" });
-  else {
-    res.send(logs);
-  }
-};
-
-// authorization
-const jwt = require("jsonwebtoken");
-const jwt_secret =
-  "goK!pusp6ThEdURUtRenOwUhAsWUCLheBazl!uJLPlS8EbreWLdrupIwabRAsiBu";
-
-let sessionToken;
-
-function tokenExists(token) {
-  return token === undefined;
-}
-
-function isValidToken(token) {
-  if (tokenExists(token)) {
-    return false;
-  } else {
-    return sessionToken === token.replace("Bearer ", "");
-  }
-}
-
-async function userExists(username) {
-  let user;
-  await users.findOne({ where: { username: username } }).then((data) => {
-    user = data != null;
-  });
-  return user;
-}
-
-const createUser = async (req, res) => {
-  if ((await userExists(req.body.username)) === false) {
-    users
-      .create({ username: req.body.username, password: req.body.password })
-      .then(() => {
-        res.status(201).send({ success: "New user created successfully!" });
-      })
-
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(409).send({ error: "Conflict, this user already exists!" });
-  }
-};
-
-const validateUser = (req, res) => {
-  const credentials = {
-    username: req.body.username,
-    password: req.body.password,
-  };
-  users
-    .findOne({ where: [credentials] })
-    .then((data) => {
-      if (data === null) {
-        res
-          .status(401)
-          .send({ error: "Unauthorized. Please try logging in again." });
-      } else {
-        let token = jwt.sign({ UserID: data.id }, jwt_secret);
-        sessionToken = token;
-        res.send({ id: data.id, token: token });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || "Internal server error",
-      });
-    });
-};
-
-const sendTodos = (req, res) => {
-  let userID = req.query.UserID;
-  let token = req.headers.authorization;
-  console.log(userID);
-
-  switch (userID === undefined) {
-    case false:
-      if (isValidToken(token)) {
-        const credentials = {
-          userID: userID,
-        };
-        todos
-          .findAll({ where: [credentials] })
-          .then((data) => {
-            res.send(data);
-          })
-          .catch((err) => {
-            res.status(500).send({
-              message: err.message || "Internal server error",
-            });
-          });
-      } else {
-        res
-          .status(403)
-          .send({ error: "Forbidden! User has no authorization!" });
-      }
-      break;
-    case true:
-      todos
-        .findAll()
-        .then((data) => {
-          res.send(data);
-        })
-        .catch((err) => {
-          res.status(500).send({
-            message: err.message || "Internal server error",
-          });
-        });
-      break;
-  }
-};
-
-const createTodo = (req, res) => {
-  if (isValidToken(req.headers.authorization)) {
-    const todo = {
-      title: req.body.title,
-      completed: req.body.completed,
-      userID: req.params.id,
-    };
-
-    todos
-      .create(todo)
-      .then(() => {
-        res.status(201).send({ success: "Data created" });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(403).send({ error: "Forbidden! User has no authorization!" });
-  }
-};
-
-const updateTodo = (req, res) => {
-  if (isValidToken(req.headers.authorization)) {
-    const id = req.params.id;
-
-    todos
-      .update(req.body, {
-        where: { id: id },
-        individualHooks: true,
-      })
-      .then(() => {
-        res.status(202).send({ success: "Data updated" });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(403).send({ error: "Forbidden! User has no authorization!" });
-  }
-};
-
-const deleteTodo = (req, res) => {
-  if (isValidToken(req.headers.authorization)) {
-    const id = req.params.id;
-
-    todos
-      .destroy({
-        where: { id: id },
-        individualHooks: true,
-      })
-      .then(() => {
-        res.status(202).send({ success: "Data updated" });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(403).send({ error: "Forbidden! User has no authorization!" });
-  }
-};
-
 module.exports = {
-  sendTodos,
-  createTodo,
-  updateTodo,
-  deleteTodo,
-  validateUser,
-  createUser,
-  sendLogs,
+  SessionModel,
+  TaskModel,
+  UserModel,
 };

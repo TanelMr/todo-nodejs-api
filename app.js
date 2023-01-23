@@ -5,6 +5,16 @@ const cors = require("cors");
 const app = express();
 const http = require("http");
 const { Server } = require("socket.io");
+
+// Controllers
+const TaskController = require("./controllers/TaskController");
+const UserController = require("./controllers/UserController");
+// const SessionController = require("./controllers/SessionController");
+// const LogController = require("./controllers/LogController");
+
+// Services
+const { requireAuth } = require("./services/UserService");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -14,24 +24,14 @@ const swaggerDocument = require("./swagger.json");
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 //rate limiter
-const limitLoginRequestsCount = rateLimit({
-  max: 5,
-  windowMs: 2 * 60 * 1000,
-  handler: function (req, res) {
-    return res.status(429).send("Too many requests");
-  },
-});
 
-const limitCRUDRequestsCount = rateLimit({
+const limitRequestsCount = rateLimit({
   max: 10,
   windowMs: 60 * 1000,
   handler: function (req, res) {
     return res.status(429).send("Too many requests");
   },
 });
-
-//choose db
-const queries = require("./db/dbSequelize");
 
 //http
 const server = http.createServer(app);
@@ -42,7 +42,9 @@ app.use(
 );
 const port = process.env.PORT;
 server.listen(port, () => {
-  console.log(`Server started on port: ${port}`);
+  console.log(
+    `App running at http://localhost:${port}. Docs at http://localhost:${port}/docs`
+  );
 });
 
 //ws
@@ -64,12 +66,18 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/tasks", queries.sendTodos);
-app.post("/tasks/:id", limitCRUDRequestsCount, queries.createTodo);
-app.put("/tasks/:id", limitCRUDRequestsCount, queries.updateTodo);
-app.delete("/tasks/:id", limitCRUDRequestsCount, queries.deleteTodo);
-app.post("/sessions", limitLoginRequestsCount, queries.validateUser);
-app.post("/users", queries.createUser);
-app.get("/logs", queries.sendLogs);
+// Routes
+app.post("/sessions", limitLoginRequestsCount, SessionController.post);
+app.get("/logs", limitRequestsCount, requireAuth, LogController.get);
+app.get("/tasks", limitRequestsCount, requireAuth, TaskController.get);
+app.post("/tasks", limitRequestsCount, requireAuth, TaskController.post);
+app.post("/users", limitRequestsCount, requireAuth, UserController.post);
+app.put("/tasks/:id", limitRequestsCount, requireAuth, TaskController.put);
+app.delete(
+  "/tasks/:id",
+  limitRequestsCount,
+  requireAuth,
+  TaskController.destroy
+);
 
 module.exports = app;
