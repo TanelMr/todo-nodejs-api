@@ -1,68 +1,35 @@
-const { items: TaskModel } = require("../db/dbSequelize");
 const { TaskModel } = require("../db/dbSequelize");
+const { requireAuth } = require("../services/UserService");
 
-const get = async (req, res) => {
-  return await todos.findAll({ where: filter });
+const get = async (req) => {
+  if (req.token === undefined) {
+    return await TaskModel.findAll();
+  }
+  return await TaskModel.findAll({
+    where: { userId: req.userId },
+  });
 };
 
-const create = (req, res) => {
-  TaskModel.create({
+const create = async (req) => {
+  await TaskModel.create({
     title: req.body.title,
     completed: req.body.completed,
-    userID: req.params.id,
-  })
-    .then(() => {
-      res.status(201).send({ success: "Item created" });
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || "Internal server error",
-      });
-    });
+    userId: req.body.userId,
+  });
 };
 
-const destroy = (req, res) => {
-  if (isValidToken(req.headers.authorization)) {
-    const id = req.params.id;
-
-    todos
-      .destroy({
-        where: { id: id },
-        individualHooks: true,
-      })
-      .then(() => {
-        res.status(202).send({ success: "Data updated" });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(403).send({ error: "Forbidden! User has no authorization!" });
-  }
+const destroy = async (req) => {
+  await TaskModel.destroy({
+    where: { id: req.id },
+    individualHooks: true,
+  });
 };
 
-const update = (req, res) => {
-  if (isValidToken(req.headers.authorization)) {
-    const id = req.params.id;
-
-    todos
-      .update(req.body, {
-        where: { id: id },
-        individualHooks: true,
-      })
-      .then(() => {
-        res.status(202).send({ success: "Data updated" });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(403).send({ error: "Forbidden! User has no authorization!" });
-  }
+const update = async (req) => {
+  await TaskModel.update(req.body, {
+    where: { id: req.body.id },
+    individualHooks: true,
+  });
 };
 
 // Export all functions

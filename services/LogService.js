@@ -1,37 +1,72 @@
-const { logs: LogModel } = require("../db/dbSequelize");
+const { LogModel, TaskModel } = require("../db/dbSequelize");
 
-const get = async (req, res) => {
-  // Get logs from database
-  let logs = await LogModel.findAll({ where: { userId: req.params.id } });
-  res.send(logs);
-};
-
-function create(eventName, userId, extraData) {
-  // Create timestamp
-  const timeStamp = new Date()
-    .toISOString()
-    .replace(/T/, " ")
-    .replace(/\..+/, "");
-
-  // Parse extraData and eventName to JSON and escape the delimiter with backslash
-  extraData = JSON.stringify(extraData).replace(/　/g, "\\　");
-
-  // Write to db
-  LogModel.create({
-    date: timeStamp,
-    method: eventName,
-    userId: userId,
-    changes: extraData,
-  });
+function formatDate(date) {
+  let newDate = date.replaceAll(/T/g, ", ").replaceAll(/"/g, "");
+  return newDate.slice(0, 17);
 }
 
-const destroy = (req, res) => {};
+const saveLogs = ({ data, method, task, completed }) => {
+  let date = formatDate(JSON.stringify(data.get("updatedAt")));
+  LogModel.create({
+    date: date,
+    method: method,
+    userId: data.get("userId"),
+    title: task,
+    completed: completed,
+  });
+};
 
-const update = (req, res) => {};
+TaskModel.beforeCreate((instance, options) => {
+  if (instance.get("title") === "" && instance.get("completed") === "") {
+    return null;
+  } else {
+    saveLogs({
+      data: instance,
+      method: "POST",
+      task: "Added " + JSON.stringify(instance.get("title")),
+      completed: "Added " + JSON.stringify(instance.get("completed")),
+    });
+  }
+});
+
+TaskModel.beforeUpdate((instance, options) => {
+  if (
+    instance.previous("title") === instance.get("title") &&
+    instance.previous("completed") === instance.get("completed")
+  ) {
+    return null;
+  } else {
+    saveLogs({
+      data: instance,
+      method: "PUT",
+      task:
+        "Changed " +
+        JSON.stringify(instance.previous("title")) +
+        " to " +
+        JSON.stringify(instance.get("title")),
+      completed:
+        "Changed " +
+        JSON.stringify(instance.previous("completed")) +
+        " to " +
+        JSON.stringify(instance.get("completed")),
+    });
+  }
+});
+
+TaskModel.beforeDestroy((instance, options) => {
+  saveLogs({
+    data: instance,
+    method: "DELETE",
+    task: "Deleted " + JSON.stringify(instance.previous("title")),
+    completed: "Deleted " + JSON.stringify(instance.previous("completed")),
+  });
+});
+
+//
+const get = async () => {
+  return await LogModel.findAll();
+};
 
 module.exports = {
   get,
-  update,
-  destroy,
-  create,
 };

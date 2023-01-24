@@ -56,7 +56,6 @@ const UserModel = sequelize.define(
   { timestamps: false }
 );
 
-// Create sessions schema
 const SessionModel = sequelize.define(
   "sequelizeSessions",
   {
@@ -75,7 +74,6 @@ const SessionModel = sequelize.define(
   { timestamps: false }
 );
 
-// Create logs schema
 const LogModel = sequelize.define(
   "sequelizeLogs",
   {
@@ -90,10 +88,13 @@ const LogModel = sequelize.define(
     method: {
       type: DataTypes.STRING,
     },
-    userID: {
+    userId: {
       type: DataTypes.INTEGER,
     },
-    changes: {
+    title: {
+      type: DataTypes.STRING,
+    },
+    completed: {
       type: DataTypes.STRING,
     },
   },
@@ -109,66 +110,9 @@ sequelize
     console.log("Failed to sync db: " + err.message);
   });
 
-function formatDate(date) {
-  let newDate = date.replaceAll(/T/g, ", ").replaceAll(/"/g, "");
-  return newDate.slice(0, 17);
-}
-
-const saveLogs = ({ data, method, changes }) => {
-  let date = formatDate(JSON.stringify(data.get("updatedAt")));
-  const subLog = [];
-  subLog.push(date, method, data.get("userID"), changes);
-  LogModel.push(subLog);
-};
-
-TaskModel.beforeCreate((instance, options) => {
-  if (instance.get("title") === "" && instance.get("completed") === "") {
-    return null;
-  } else {
-    saveLogs({
-      data: instance,
-      method: "POST",
-      firstValue: "Added " + JSON.stringify(instance.get("title")),
-      secondValue: "Added " + JSON.stringify(instance.get("completed")),
-    });
-  }
-});
-
-TaskModel.beforeUpdate((instance, options) => {
-  if (
-    instance.previous("title") === instance.get("title") &&
-    instance.previous("completed") === instance.get("completed")
-  ) {
-    return null;
-  } else {
-    saveLogs({
-      data: instance,
-      method: "PUT",
-      firstValue:
-        "Changed " +
-        JSON.stringify(instance.previous("title")) +
-        " to " +
-        JSON.stringify(instance.get("title")),
-      secondValue:
-        "Changed " +
-        JSON.stringify(instance.previous("completed")) +
-        " to " +
-        JSON.stringify(instance.get("completed")),
-    });
-  }
-});
-
-TaskModel.beforeDestroy((instance, options) => {
-  saveLogs({
-    data: instance,
-    method: "DELETE",
-    firstValue: "Deleted " + JSON.stringify(instance.previous("title")),
-    secondValue: "Deleted " + JSON.stringify(instance.previous("completed")),
-  });
-});
-
 module.exports = {
   SessionModel,
   TaskModel,
   UserModel,
+  LogModel,
 };

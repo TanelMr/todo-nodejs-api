@@ -1,5 +1,5 @@
-const jwt = require("jsonwebtoken");
-const { UserModel, SessionModel } = require("../db/dbSequelize");
+const { UserModel } = require("../db/dbSequelize");
+const Task = require("../services/SessionService");
 
 async function userExists(username) {
   let user;
@@ -9,27 +9,18 @@ async function userExists(username) {
   return user;
 }
 
-const create = async (req, res) => {
+const create = async (req) => {
   if ((await userExists(req.body.username)) === false) {
-    UserModel.create({
+    await UserModel.create({
       username: req.body.username,
       password: req.body.password,
-    })
-      .then(() => {
-        res.status(201).send({ success: "New user created successfully!" });
-      })
-
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Internal server error",
-        });
-      });
-  } else {
-    res.status(409).send({ error: "Conflict, this user already exists!" });
+    });
+    return false;
   }
+  return true;
 };
 
-const validate = (req, res) => {
+const validate = (req, res, next) => {
   UserModel.findOne({
     where: [
       {
@@ -44,10 +35,9 @@ const validate = (req, res) => {
           .status(401)
           .send({ error: "Unauthorized. Please try logging in again." });
       }
+      req.userId = user.id;
 
-      let token = jwt.sign({ UserID: user.id }, jwt_secret);
-      SessionModel.create({ token: token, userId: user.id });
-      res.send({ id: user.id, token: token });
+      next();
     })
     .catch((err) => {
       res.status(500).send({
@@ -57,6 +47,7 @@ const validate = (req, res) => {
 };
 
 const requireAuth = async (req, res, next) => {
+  console.log("Authorization fired");
   if (!req.headers.authorization) {
     return res.status(401).send("Authorization header is required");
   }
@@ -68,7 +59,7 @@ const requireAuth = async (req, res, next) => {
   }
 
   // Get session by token from db
-  const session = await Session.get(token);
+  const session = await Task.get(token);
 
   // If session is not found, return 401
   if (!session) {
