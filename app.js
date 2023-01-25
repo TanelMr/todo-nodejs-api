@@ -61,7 +61,12 @@ io.on("connection", (socket) => {
 
 // Routes
 app.post("/sessions", limitRequestsCount, validate, SessionController.create);
-app.delete("/sessions", requireAuth, SessionController.destroy);
+app.delete(
+  "/sessions",
+  limitRequestsCount,
+  requireAuth,
+  SessionController.destroy
+);
 
 app.get("/tasks", limitRequestsCount, TaskController.get);
 app.post("/tasks", limitRequestsCount, requireAuth, TaskController.create);
