@@ -63,8 +63,7 @@ const saveLogs = ({ data, method, task, completed }) => {
 };
 
 const get = async (req, res) => {
-  res.status(200).send({ Success: "Request successful" });
-  return await LogModel.findAll();
+  return res.status(200).send(await LogModel.findAll());
 };
 
 module.exports = {

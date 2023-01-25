@@ -1,7 +1,9 @@
 const { SessionModel } = require("../db/dbSequelize");
 
 const get = async (token) => {
-  return await SessionModel.findOne({ where: { token: token } });
+  return await SessionModel.findOne({
+    where: { token: token },
+  });
 };
 
 const create = async (userId) => {

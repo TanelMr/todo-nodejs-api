@@ -50,9 +50,7 @@ const requireAuth = async (req, res, next) => {
   if (token === "null") {
     return res.status(401).send({ error: "Unauthorized" });
   }
-
   const session = await Session.get(token);
-
   if (!session) {
     return res.status(401).send({ error: "Unauthorized" });
   }
