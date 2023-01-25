@@ -24,7 +24,7 @@ const destroy = async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     await Task.destroy(token).then((data) => {
       if (data === 1) {
-        return res.status(200).send({ Message: "Session deleted" });
+        return res.status(204).send({ Success: "Session deleted" });
       }
     });
   } catch (e) {

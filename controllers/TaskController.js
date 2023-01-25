@@ -2,12 +2,7 @@ const Task = require("../services/TaskService");
 
 const get = async (req, res) => {
   try {
-    return res.status(200).json(
-      await Task.get({
-        userId: req.query.UserID,
-        token: req.headers.authorization,
-      })
-    );
+    return await Task.get(req, res);
   } catch (e) {
     return res.status(500).send({ error: e.message });
   }
@@ -15,9 +10,7 @@ const get = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    await Task.create(req).then(() => {
-      return res.status(201).send({ success: "Data crated" });
-    });
+    return await Task.create(req, res);
   } catch (e) {
     return res.status(500).send({ error: e.message });
   }
@@ -25,9 +18,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    await Task.update(req).then(() => {
-      return res.status(202).send({ success: "Data updated" });
-    });
+    return await Task.update(req, res);
   } catch (e) {
     return res.status(500).send({ error: e.message });
   }
@@ -35,9 +26,7 @@ const update = async (req, res) => {
 
 const destroy = async (req, res) => {
   try {
-    await Task.destroy({ id: req.params.id }).then(() => {
-      return res.status(202).send({ success: "Data updated" });
-    });
+    return await Task.destroy(req, res);
   } catch (e) {
     return res.status(500).send({ error: e.message });
   }

@@ -62,10 +62,9 @@ io.on("connection", (socket) => {
 // Routes
 app.post("/sessions", limitRequestsCount, validate, SessionController.create);
 app.delete("/sessions", requireAuth, SessionController.destroy);
-app.get("/logs", limitRequestsCount, LogController.get);
+
 app.get("/tasks", limitRequestsCount, TaskController.get);
 app.post("/tasks", limitRequestsCount, requireAuth, TaskController.create);
-app.post("/users", limitRequestsCount, UserController.create);
 app.put("/tasks/:id", limitRequestsCount, requireAuth, TaskController.update);
 app.delete(
   "/tasks/:id",
@@ -73,5 +72,9 @@ app.delete(
   requireAuth,
   TaskController.destroy
 );
+
+app.post("/users", limitRequestsCount, UserController.create);
+
+app.get("/logs", limitRequestsCount, LogController.get);
 
 module.exports = app;

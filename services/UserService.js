@@ -1,23 +1,21 @@
 const { UserModel } = require("../db/dbSequelize");
-const Task = require("../services/SessionService");
+const Session = require("../services/SessionService");
 
-async function userExists(username) {
-  let user;
-  await UserModel.findOne({ where: { username: username } }).then((data) => {
-    user = data != null;
-  });
-  return user;
+async function userDoesNotExist(username) {
+  if ((await UserModel.findOne({ where: { username: username } })) === null) {
+    return true;
+  }
 }
 
-const create = async (req) => {
-  if ((await userExists(req.body.username)) === false) {
+const create = async (req, res) => {
+  if (await userDoesNotExist(req.body.username)) {
     await UserModel.create({
       username: req.body.username,
       password: req.body.password,
     });
-    return false;
+    return res.status(201).send({ success: "Data created" });
   }
-  return true;
+  return res.status(409).send({ error: "Conflict" });
 };
 
 const validate = (req, res, next) => {
@@ -31,9 +29,7 @@ const validate = (req, res, next) => {
   })
     .then((user) => {
       if (user === null) {
-        return res
-          .status(401)
-          .send({ error: "Unauthorized. Please try logging in again." });
+        return res.status(401).send({ error: "Unauthorized" });
       }
       req.userId = user.id;
 
@@ -47,31 +43,24 @@ const validate = (req, res, next) => {
 };
 
 const requireAuth = async (req, res, next) => {
-  console.log("Authorization fired");
   if (!req.headers.authorization) {
-    return res.status(401).send("Authorization header is required");
+    return res.status(401).send({ error: "Unauthorized" });
   }
-
   const token = req.headers.authorization.split(" ")[1];
-
   if (token === "null") {
-    return res.status(401).send("Malformed token in authorization header");
+    return res.status(401).send({ error: "Unauthorized" });
   }
 
-  // Get session by token from db
-  const session = await Task.get(token);
+  const session = await Session.get(token);
 
-  // If session is not found, return 401
   if (!session) {
-    return res.status(401).send("Invalid token in authorization header");
+    return res.status(401).send({ error: "Unauthorized" });
   }
-
   req.userId = session.userId;
 
   next();
 };
 
-// Export all functions
 module.exports = {
   create,
   validate,

@@ -1,21 +1,5 @@
 const { LogModel, TaskModel } = require("../db/dbSequelize");
 
-function formatDate(date) {
-  let newDate = date.replaceAll(/T/g, ", ").replaceAll(/"/g, "");
-  return newDate.slice(0, 17);
-}
-
-const saveLogs = ({ data, method, task, completed }) => {
-  let date = formatDate(JSON.stringify(data.get("updatedAt")));
-  LogModel.create({
-    date: date,
-    method: method,
-    userId: data.get("userId"),
-    title: task,
-    completed: completed,
-  });
-};
-
 TaskModel.beforeCreate((instance, options) => {
   if (instance.get("title") === "" && instance.get("completed") === "") {
     return null;
@@ -62,8 +46,24 @@ TaskModel.beforeDestroy((instance, options) => {
   });
 });
 
-//
-const get = async () => {
+function formatDate(date) {
+  let newDate = date.replaceAll(/T/g, ", ").replaceAll(/"/g, "");
+  return newDate.slice(0, 17);
+}
+
+const saveLogs = ({ data, method, task, completed }) => {
+  let date = formatDate(JSON.stringify(data.get("updatedAt")));
+  LogModel.create({
+    date: date,
+    method: method,
+    userId: data.get("userId"),
+    title: task,
+    completed: completed,
+  });
+};
+
+const get = async (req, res) => {
+  res.status(200).send({ Success: "Request successful" });
   return await LogModel.findAll();
 };
 
