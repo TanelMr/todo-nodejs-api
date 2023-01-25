@@ -19,6 +19,9 @@ DB_DATABASE='mydatabaseName'
 DB_USER='mydatabaseUsername'
 DB_PASSWORD='mydatabasePassword'
 DB_HOST='mydatabaseAddress'
+
+# JasonWebToken 
+JWT_SECRET='goK!pusp6ThEdURUtRenOwUhAsWUCLheBazl!uJLPlS8EbreWLdrupIwabRAsiBu'
 ```
 
 ## Starting the app:
@@ -30,5 +33,5 @@ npm start
 After starting the app, go to URL serverAddress/docs to view the API documentation (powered by Swagger)
 ```
 Example:
-http://localhost:3001/docs
+http://localhost:PORT/docs
 ```
