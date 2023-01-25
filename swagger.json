@@ -10,12 +10,6 @@
       "email": "tanel.marjama@voco.ee"
     }
   },
-  "servers": [
-    {
-      "url": "http://localhost:3001",
-      "description": "Development server"
-    }
-  ],
   "paths": {
     "/tasks": {
       "summary": "Get tasks for authorized and unauthorized users.",
@@ -46,15 +40,15 @@
             },
             "description": "Got tasks successfully."
           },
-          "default": {
+          "401": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/error401"
                 }
               }
             },
-            "description": "unexpected error"
+            "description": "Unauthorized to get tasks."
           }
         },
         "security": [
@@ -64,7 +58,7 @@
         ],
         "operationId": "getTasks",
         "summary": "Get tasks.",
-        "description": "Fetches tasks from the server."
+        "description": "Gets tasks from the server."
       },
       "post": {
         "requestBody": {
@@ -145,18 +139,35 @@
           "required": true
         },
         "responses": {
-          "204": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/res204"
+                  "$ref": "#/components/schemas/res200"
                 }
               }
             },
             "description": "Task updated."
           },
           "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error401"
+                }
+              }
+            },
             "description": "Unauthorized to edit task."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error404"
+                }
+              }
+            },
+            "description": "Task not found."
           }
         },
         "security": [
@@ -170,25 +181,35 @@
       },
       "delete": {
         "responses": {
-          "204": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/res204"
+                  "$ref": "#/components/schemas/res200"
                 }
               }
             },
             "description": "Task deleted."
           },
-          "403": {
+          "401": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/error403"
+                  "$ref": "#/components/schemas/error401"
                 }
               }
             },
-            "description": "Forbidden to change data!"
+            "description": "Unauthorized to delete task."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error404"
+                }
+              }
+            },
+            "description": "Task not found."
           }
         },
         "security": [
@@ -216,6 +237,47 @@
           "required": true
         }
       ]
+    },
+    "/users": {
+      "summary": "Create a new user.",
+      "description": "Enpoint to create new users.",
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/userCredentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/res201"
+                }
+              }
+            },
+            "description": "New user created."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error409"
+                }
+              }
+            },
+            "description": "User already exists."
+          }
+        },
+        "operationId": "createNewUser",
+        "summary": "Create new user.",
+        "description": "Endpoint to create new user."
+      }
     },
     "/sessions": {
       "summary": "Log user in or out of the application.",
@@ -258,50 +320,36 @@
         "description": "Endpoint to log a user in."
       },
       "delete": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/res200"
+                }
+              }
+            },
+            "description": "User logged out of the server."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error401"
+                }
+              }
+            },
+            "description": "Unauthorized to delete session."
+          }
+        },
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
         "operationId": "logUserOut",
         "summary": "Log user out of the server.",
         "description": "Endpoint to log user out of the server."
-      }
-    },
-    "/users": {
-      "summary": "Create a new user.",
-      "description": "Enpoint to create new users.",
-      "post": {
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/userCredentials"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/res201"
-                }
-              }
-            },
-            "description": "New user created."
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error409"
-                }
-              }
-            },
-            "description": "User already exists."
-          }
-        },
-        "operationId": "createNewUser",
-        "summary": "Create new user.",
-        "description": "Endpoint to create new user."
       }
     }
   },
@@ -319,17 +367,11 @@
           "completed": {
             "description": "Completed value",
             "type": "string"
-          },
-          "userID": {
-            "format": "int32",
-            "description": "User ID.",
-            "type": "integer"
           }
         },
         "example": {
           "title": "Jaluta koeraga ",
-          "completed": "Veel mitte",
-          "userID": 1
+          "completed": "Veel mitte"
         }
       },
       "updateTodo": {
@@ -412,7 +454,7 @@
       },
       "logs": {
         "title": "Root Type for logs",
-        "description": "An array of logs.",
+        "description": "JSON object containing server logs.",
         "type": "array",
         "items": {
           "type": "array",
@@ -421,27 +463,30 @@
           }
         },
         "example": [
-          [
-            "2023-01-17, 01:25",
-            "PUT",
-            1,
-            "Changed \"Mine tuppa\" to \"Mine tuppa\"",
-            "Changed \"Jah\" to \"Ei\""
-          ],
-          [
-            "2023-01-16, 17:59",
-            "DELETE",
-            1,
-            "Deleted \"Mine õue\"",
-            "Deleted \"Ei ole \""
-          ],
-          [
-            "2023-01-17, 01:26",
-            "POST",
-            1,
-            "Added \"Tee midagi\"",
-            "Added \"Ei\""
-          ]
+          {
+            "id": 2,
+            "date": "2023-01-24, 14:50",
+            "method": "POST",
+            "userId": 1,
+            "title": "Added \"Tee midagi\"",
+            "completed": "Added \"Ei \""
+          },
+          {
+            "id": 3,
+            "date": "2023-01-24, 14:50",
+            "method": "POST",
+            "userId": 1,
+            "title": "Added \"Mine õue\"",
+            "completed": "Added \"jah\""
+          },
+          {
+            "id": 4,
+            "date": "2023-01-24, 14:50",
+            "method": "DELETE",
+            "userId": 1,
+            "title": "Deleted \"Mine õue\"",
+            "completed": "Deleted \"jah\""
+          }
         ]
       },
       "userLoggedInResponse": {
@@ -511,11 +556,18 @@
           "error": "Forbidden"
         }
       },
-      "res204": {
-        "description": "Response for http 204.",
+      "res200": {
+        "description": "Response for http 200.",
         "type": "object",
         "example": {
           "success": "Request accepted"
+        }
+      },
+      "error404": {
+        "description": "Message for http 404",
+        "type": "object",
+        "example": {
+          "error": "Not found"
         }
       }
     },
