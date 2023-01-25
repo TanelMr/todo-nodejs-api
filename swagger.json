@@ -10,23 +10,21 @@
       "email": "tanel.marjama@voco.ee"
     }
   },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Development server"
+    }
+  ],
   "paths": {
     "/tasks": {
-      "summary": "Get all todo items.",
-      "description": "Endpoint to get all the todo items.",
+      "summary": "Get tasks for authorized and unauthorized users.",
+      "description": "Endpoint to get all the tasks for authorized and unauthorized users.",
       "get": {
         "parameters": [
           {
-            "examples": {
-              "UserID": {
-                "value": "1"
-              },
-              "NoUserID": {
-                "value": ""
-              }
-            },
             "name": "UserID",
-            "description": "Parameter for UserID",
+            "description": "Query parameter for userId.",
             "schema": {
               "format": "int32",
               "type": "integer"
@@ -46,27 +44,17 @@
                 }
               }
             },
-            "description": "Got todo items."
+            "description": "Got tasks successfully."
           },
-          "403": {
+          "default": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/error403"
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             },
-            "description": "Forbidden to get users todo list."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
+            "description": "unexpected error"
           }
         },
         "security": [
@@ -74,9 +62,51 @@
             "Authorization": []
           }
         ],
-        "operationId": "getTodos",
-        "summary": "Get todo items.",
-        "description": "Gets all the todo items or get a specific users todo items (depending on the parameter)."
+        "operationId": "getTasks",
+        "summary": "Get tasks.",
+        "description": "Fetches tasks from the server."
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createNewTodo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/res201"
+                }
+              }
+            },
+            "description": "New task created."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error401"
+                }
+              }
+            },
+            "description": "Unauthorized to create a new task."
+          }
+        },
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "operationId": "newTask",
+        "summary": "Create new task.",
+        "description": "Sends new task to the server."
       }
     },
     "/logs": {
@@ -93,9 +123,6 @@
               }
             },
             "description": "Logs received."
-          },
-          "500": {
-            "description": "Internal server error."
           }
         },
         "operationId": "getServerLogs",
@@ -117,53 +144,19 @@
           },
           "required": true
         },
-        "parameters": [
-          {
-            "examples": {
-              "TaskID": {
-                "value": "3"
-              }
-            },
-            "name": "id",
-            "description": "Parameter for TaskID",
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            },
-            "in": "path",
-            "required": true
-          }
-        ],
         "responses": {
-          "202": {
+          "204": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/res202"
+                  "$ref": "#/components/schemas/res204"
                 }
               }
             },
-            "description": "Todo updated."
+            "description": "Task updated."
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error403"
-                }
-              }
-            },
-            "description": "Forbidden to change data!"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
+          "401": {
+            "description": "Unauthorized to edit task."
           }
         },
         "security": [
@@ -172,106 +165,20 @@
           }
         ],
         "operationId": "updateTodoItem",
-        "summary": "Update todo item.",
-        "description": "Send a request to server to update a single todo item."
-      },
-      "post": {
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/createNewTodo"
-              }
-            }
-          },
-          "required": true
-        },
-        "parameters": [
-          {
-            "examples": {
-              "UserID": {
-                "value": "1"
-              }
-            },
-            "name": "id",
-            "description": "Parameter for UserID",
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            },
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/res201"
-                }
-              }
-            },
-            "description": "New todo created."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error403"
-                }
-              }
-            },
-            "description": "Forbidden to change data!"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
-          }
-        },
-        "security": [
-          {
-            "Authorization": []
-          }
-        ],
-        "operationId": "addNewTodo",
-        "summary": "Add a new todo item.",
-        "description": "Sends a new todo item to the server."
+        "summary": "Update task.",
+        "description": "Send a request to server to update a task."
       },
       "delete": {
-        "parameters": [
-          {
-            "examples": {
-              "TaskID": {
-                "value": "1"
-              }
-            },
-            "name": "id",
-            "description": "Parameter for TaskID.",
-            "schema": {
-              "format": "int32",
-              "type": "integer"
-            },
-            "in": "path",
-            "required": true
-          }
-        ],
         "responses": {
-          "202": {
+          "204": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/res202"
+                  "$ref": "#/components/schemas/res204"
                 }
               }
             },
-            "description": "Todo item has been deleted."
+            "description": "Task deleted."
           },
           "403": {
             "content": {
@@ -282,16 +189,6 @@
               }
             },
             "description": "Forbidden to change data!"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
           }
         },
         "security": [
@@ -300,13 +197,29 @@
           }
         ],
         "operationId": "deleteTodoItem",
-        "summary": "Delete todo item.",
-        "description": "Send a request to server to delete a todo item."
-      }
+        "summary": "Delete task item.",
+        "description": "Send a request to server to delete a task."
+      },
+      "parameters": [
+        {
+          "examples": {
+            "Example of a id parameter": {
+              "value": "3"
+            }
+          },
+          "name": "id",
+          "description": "Parameter for task id ",
+          "schema": {
+            "type": "integer"
+          },
+          "in": "path",
+          "required": true
+        }
+      ]
     },
     "/sessions": {
-      "summary": "Log user in.",
-      "description": "Endpoint to log user in and give authorization to edit the todo items.",
+      "summary": "Log user in or out of the application.",
+      "description": "Endpoint to log user in or out of the application.",
       "post": {
         "requestBody": {
           "content": {
@@ -338,21 +251,16 @@
               }
             },
             "description": "No user found with those credentials."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
           }
         },
         "operationId": "authorizeUser",
         "summary": "Log user in.",
         "description": "Endpoint to log a user in."
+      },
+      "delete": {
+        "operationId": "logUserOut",
+        "summary": "Log user out of the server.",
+        "description": "Endpoint to log user out of the server."
       }
     },
     "/users": {
@@ -374,7 +282,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/res201Usercreated"
+                  "$ref": "#/components/schemas/res201"
                 }
               }
             },
@@ -389,20 +297,11 @@
               }
             },
             "description": "User already exists."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/error500"
-                }
-              }
-            },
-            "description": "Internal server error."
           }
         },
         "operationId": "createNewUser",
-        "summary": "Create new user."
+        "summary": "Create new user.",
+        "description": "Endpoint to create new user."
       }
     }
   },
@@ -410,7 +309,7 @@
     "schemas": {
       "createNewTodo": {
         "title": "Root Type for createNewTodo",
-        "description": "Data to create new todo item.",
+        "description": "Data to create new task item.",
         "type": "object",
         "properties": {
           "title": {
@@ -420,11 +319,17 @@
           "completed": {
             "description": "Completed value",
             "type": "string"
+          },
+          "userID": {
+            "format": "int32",
+            "description": "User ID.",
+            "type": "integer"
           }
         },
         "example": {
           "title": "Jaluta koeraga ",
-          "completed": "Veel mitte"
+          "completed": "Veel mitte",
+          "userID": 1
         }
       },
       "updateTodo": {
@@ -432,6 +337,11 @@
         "description": "Data to update the todo list.",
         "type": "object",
         "properties": {
+          "id": {
+            "format": "int32",
+            "description": "ID of the task to be updated.",
+            "type": "integer"
+          },
           "title": {
             "description": "Title value.",
             "type": "string"
@@ -442,6 +352,7 @@
           }
         },
         "example": {
+          "id": 143,
           "title": "Jaluta koeraga ",
           "completed": "Ei ole "
         }
@@ -557,14 +468,7 @@
         "description": "Errormessage for unauthorized status.",
         "type": "object",
         "example": {
-          "error": "Unauthorized. Please try logging in again."
-        }
-      },
-      "error500": {
-        "description": "Errormessage for internal server error.",
-        "type": "object",
-        "example": {
-          "error": "Internal server error."
+          "error": "Unauthorized"
         }
       },
       "res201": {
@@ -574,18 +478,11 @@
           "success": "Data created"
         }
       },
-      "res202": {
-        "description": "Response for http 202.",
-        "type": "object",
-        "example": {
-          "success": "Data updated"
-        }
-      },
       "error409": {
-        "description": "Errormessage for trying to create a user that already exists.",
+        "description": "Errormessage for conflict status.",
         "type": "object",
         "example": {
-          "error": "Conflict, this user already exists!"
+          "error": "Conflict"
         }
       },
       "userCredentials": {
@@ -607,18 +504,18 @@
           "password": "Password1"
         }
       },
-      "res201Usercreated": {
-        "description": "Data for new user created success message",
-        "type": "object",
-        "example": {
-          "success": "New user created successfully!"
-        }
-      },
       "error403": {
         "description": "Errormessage for prohibited status.",
         "type": "object",
         "example": {
-          "error": "Forbidden! User has no authorization!"
+          "error": "Forbidden"
+        }
+      },
+      "res204": {
+        "description": "Response for http 204.",
+        "type": "object",
+        "example": {
+          "success": "Request accepted"
         }
       }
     },
